@@ -14,40 +14,39 @@ import {
 	contentWidthArr,
 	OptionType,
 	ArticleStateType,
+	defaultArticleState,
 } from '../../../src/constants/articleProps';
+
 import { Separator } from 'src/ui/separator/Separator';
+import clsx from 'clsx';
 
 type PropsArticleParamsForm = {
 	onChange: (data: ArticleStateType) => void;
+	currentArticleState: ArticleStateType;
 };
 
 export const ArticleParamsForm = (props: PropsArticleParamsForm) => {
-	const { onChange } = props;
+	const { onChange, currentArticleState } = props;
 
-	const asideRef = useRef<HTMLElement | null>(null); // Ссылка на dom aside чтобы добавлять класс открытия и убирать его
-
+	const asideRef = useRef<HTMLElement>(null); // Ссылка на dom aside чтобы добавлять проверять что обработчик закрытия сайдбара тыкнул не на сайд бар
+	const arrowButtonRef = useRef<HTMLDivElement>(null);
 	const [isOpenAside, setIsOpenAside] = useState<boolean>(false); // Состояние aside на странице
 
 	const [selectedFont, setSelectedFont] = useState<OptionType>(
-		fontFamilyOptions[0]
+		currentArticleState.fontFamilyOption
 	); // Состояние шрифта
-	const [fontSize, setFontSize] = useState<OptionType>(fontSizeOptions[0]); // Состояние размера шрифта на странице
-	const [fontColor, setFontColor] = useState<OptionType>(fontColors[0]); // Состояние цвета шрифта
+	const [fontSize, setFontSize] = useState<OptionType>(
+		currentArticleState.fontSizeOption
+	); // Состояние размера шрифта на странице
+	const [fontColor, setFontColor] = useState<OptionType>(
+		currentArticleState.fontColor
+	); // Состояние цвета шрифта
 	const [backgroundColor, setBackgroundColor] = useState<OptionType>(
-		backgroundColors[0]
+		currentArticleState.backgroundColor
 	); // Состояние цвет фона
 	const [contentWidth, setContentWidth] = useState<OptionType>(
-		contentWidthArr[0]
+		currentArticleState.contentWidth
 	); // Состояние ширины контента
-
-	useEffect(() => {
-		//Открытие и закрытие aside
-		if (isOpenAside) {
-			asideRef.current!.classList.add(styles.container_open);
-		} else {
-			asideRef.current!.classList.remove(styles.container_open);
-		}
-	}, [isOpenAside]);
 
 	//Смена состояние у aside
 	function toggleIsOpen() {
@@ -67,19 +66,41 @@ export const ArticleParamsForm = (props: PropsArticleParamsForm) => {
 	}
 
 	function backToDefaultStyles() {
-		setSelectedFont(fontFamilyOptions[0]),
-			setFontSize(fontSizeOptions[0]),
-			setFontColor(fontColors[0]),
-			setBackgroundColor(backgroundColors[0]),
-			setContentWidth(contentWidthArr[0]);
+		setSelectedFont(defaultArticleState.fontFamilyOption),
+			setFontSize(defaultArticleState.fontSizeOption),
+			setFontColor(defaultArticleState.fontColor),
+			setBackgroundColor(defaultArticleState.backgroundColor),
+			setContentWidth(defaultArticleState.contentWidth);
 		onChange({
-			fontFamilyOption: fontFamilyOptions[0],
-			fontSizeOption: fontSizeOptions[0],
-			fontColor: fontColors[0],
-			backgroundColor: backgroundColors[0],
-			contentWidth: contentWidthArr[0],
+			fontFamilyOption: defaultArticleState.fontFamilyOption,
+			fontSizeOption: defaultArticleState.fontSizeOption,
+			fontColor: defaultArticleState.fontColor,
+			backgroundColor: defaultArticleState.backgroundColor,
+			contentWidth: defaultArticleState.contentWidth,
 		});
 	}
+
+	useEffect(() => {
+		if (!isOpenAside) return;
+
+		const handleClick = (e: Event) => {
+			if (!(e.target instanceof HTMLElement)) return;
+
+			if (
+				!asideRef.current!.contains(e.target as HTMLElement) &&
+				!arrowButtonRef.current!.contains(e.target as HTMLElement) &&
+				!e.target.closest('[data-testid="selectDropdown"]')
+			) {
+				setIsOpenAside(false);
+			}
+		};
+
+		document.addEventListener('click', handleClick);
+
+		return () => {
+			return document.removeEventListener('click', handleClick);
+		};
+	}, [isOpenAside]);
 	return (
 		<>
 			<ArrowButton
@@ -87,11 +108,17 @@ export const ArticleParamsForm = (props: PropsArticleParamsForm) => {
 				onClick={() => {
 					toggleIsOpen();
 				}}
+				refFromArticleParams={arrowButtonRef}
 			/>
-			<aside className={styles.container} ref={asideRef}>
+			<aside
+				className={clsx(styles.container, {
+					[styles.container_open]: isOpenAside,
+				})}
+				ref={asideRef}>
 				<form
 					className={styles.form}
-					onSubmit={(event) => collectorParams(event)}>
+					onSubmit={(event) => collectorParams(event)}
+					onReset={backToDefaultStyles}>
 					<Text
 						as={'h2'}
 						weight={800}
@@ -104,53 +131,36 @@ export const ArticleParamsForm = (props: PropsArticleParamsForm) => {
 						options={fontFamilyOptions}
 						selected={selectedFont}
 						title={'Шрифт'}
-						onChange={(value) => {
-							setSelectedFont(value);
-						}}
+						onChange={setSelectedFont}
 					/>
 					<RadioGroup
 						options={fontSizeOptions}
 						selected={fontSize}
 						title={'РАЗМЕР ШРИФТА'}
-						onChange={(value) => {
-							setFontSize(value);
-						}}
+						onChange={setFontSize}
 						name={'fontSize'}
 					/>
 					<Select
 						options={fontColors}
 						selected={fontColor}
 						title={'ЦВЕТ ШРИФТА'}
-						onChange={(value) => {
-							setFontColor(value);
-						}}
+						onChange={setFontColor}
 					/>
 					<Separator />
 					<Select
 						options={backgroundColors}
 						selected={backgroundColor}
 						title={'ЦВЕТ ФОНА'}
-						onChange={(value) => {
-							setBackgroundColor(value);
-						}}
+						onChange={setBackgroundColor}
 					/>
 					<Select
 						options={contentWidthArr}
 						selected={contentWidth}
 						title={'ШИРИНА КОНТЕНТА'}
-						onChange={(value) => {
-							setContentWidth(value);
-						}}
+						onChange={setContentWidth}
 					/>
 					<div className={styles.bottomContainer}>
-						<Button
-							title='Сбросить'
-							htmlType='reset'
-							type='clear'
-							onClick={() => {
-								backToDefaultStyles();
-							}}
-						/>
+						<Button title='Сбросить' htmlType='reset' type='clear' />
 						<Button title='Применить' htmlType='submit' type='apply' />
 					</div>
 				</form>

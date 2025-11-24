@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { StrictMode, CSSProperties, useState, useEffect } from 'react';
+import { StrictMode, CSSProperties, useState } from 'react';
 import clsx from 'clsx';
 
 import { Article } from './components/article/Article';
@@ -15,28 +15,31 @@ const root = createRoot(domNode);
 
 const App = () => {
 	//Общие данные страницы которые буду обновляться только после применить или сбросить в  aside
-	const [params, setParams] =
+	const [currentArticleState, setCurrentArticleState] =
 		useState<typeof defaultArticleState>(defaultArticleState);
 
 	function useNewParametres(data: ArticleStateType) {
-		setParams({ ...data });
+		setCurrentArticleState({ ...data });
 	}
 
-	useEffect(() => {}, [params]);
+	// useEffect(() => {}, [currentArticleState]);
 
 	return (
 		<main
 			className={clsx(styles.main)}
 			style={
 				{
-					'--font-family': params.fontFamilyOption.value,
-					'--font-size': params.fontSizeOption.value,
-					'--font-color': params.fontColor.value,
-					'--container-width': params.contentWidth.value,
-					'--bg-color': params.backgroundColor.value,
+					'--font-family': currentArticleState.fontFamilyOption.value,
+					'--font-size': currentArticleState.fontSizeOption.value,
+					'--font-color': currentArticleState.fontColor.value,
+					'--container-width': currentArticleState.contentWidth.value,
+					'--bg-color': currentArticleState.backgroundColor.value,
 				} as CSSProperties
 			}>
-			<ArticleParamsForm onChange={useNewParametres} />
+			<ArticleParamsForm
+				onChange={useNewParametres}
+				currentArticleState={currentArticleState}
+			/>
 			<Article />
 		</main>
 	);
